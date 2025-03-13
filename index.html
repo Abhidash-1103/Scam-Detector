@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scam Detector</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"> <!-- Font Awesome Icons -->
+    <style>
+        /* General Body Styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #FFFFFF; /* App Background */
+            color: #4A4A4A; /* Secondary Text */
+        }
+
+        h1 {
+            color: #61AC8B; /* Positive Interaction */
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #container {
+            display: flex;
+            flex-wrap: wrap;
+            max-width: 1200px;
+            margin: auto;
+            gap: 20px;
+            background-color: #EFF4F4; /* Light Background Variant */
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); /* Shadow Gray */
+        }
+
+        .input-section, .camera-section {
+            flex: 1;
+            min-width: 300px;
+            background-color: #FFFFFF; /* Neutral Background */
+            padding: 15px;
+            border: 1px solid #ECECEC; /* Neutral Gray */
+            border-radius: 5px;
+        }
+
+        #message {
+    width: 100%;
+    max-width: 400px; /* Limit the width to prevent it from stretching too far */
+    height: 120px; /* Adjusted height for better fit */
+    padding: 10px;
+    border: 1px solid #ECECEC; /* Neutral Gray */
+    border-radius: 5px;
+    resize: vertical;
+    font-size: 1em;
+    margin: 0 auto 15px auto; /* Center the text box and add bottom margin */
+    background-color: #EFF4F4; /* Light Background Variant */
+    box-sizing: border-box; /* Ensure padding does not overflow */
+}
+
+
+        #message:focus {
+            border-color: #61AC8B;
+            box-shadow: 0 0 4px #61AC8B;
+        }
+
+        #message.error {
+            border: 1px solid #DE3D3D; /* Warning (Red) */
+            background-color: #FFEBEB; /* Light Red for Error */
+        }
+
+        #videoElement {
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid #ECECEC; /* Neutral Gray */
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #7DB0AB; /* Primary Accent */
+            color: #FFFFFF; /* White Text */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 1em;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px; /* Space between icon and text */
+        }
+
+        button:hover {
+            background-color: #46C990; /* Success (Green) */
+        }
+
+        button:focus {
+            outline: 3px solid #61AC8B;
+            outline-offset: 2px;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 1.1em;
+            padding: 20px;
+            border: 1px solid #ECECEC; /* Neutral Gray */
+            border-radius: 5px;
+            background-color: #EFF4F4; /* Light Background Variant */
+        }
+
+        .analysis-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .label {
+            flex: 0 0 150px;
+            font-weight: bold;
+            color: #61AC8B; /* Positive Interaction */
+            padding-right: 10px;
+            text-align: right;
+        }
+
+        .value {
+            flex: 1;
+            text-align: left;
+            color: #4A4A4A; /* Secondary Text */
+        }
+
+        .value ol {
+            padding-left: 20px;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .error {
+            color: #DE3D3D; /* Warning (Red) */
+            margin-top: 10px;
+        }
+
+        .loader {
+            border: 4px solid #ECECEC; /* Neutral Gray */
+            border-top: 4px solid #007BFF; /* Positive Interaction */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #loadingSpinner {
+            display: none;
+            text-align: center;
+        }
+
+        @media (max-width: 800px) {
+            #container {
+                flex-direction: column;
+            }
+
+            #videoElement {
+                max-width: 100%;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Scam Detector</h1>
+    <div id="container">
+        <div class="input-section">
+            <h2 style="color: #4A4A4A;">Enter Suspicious Message</h2>
+            <textarea id="message" placeholder="Paste your message here..." aria-label="Scam message input"></textarea><br>
+            <button id="analyzeButton" onclick="checkScam()">
+                <i class="fas fa-search"></i> Analyze Message
+            </button>
+        </div>
+
+        <div class="camera-section">
+            <h2 style="color: #4A4A4A;">Capture Image</h2>
+            <video id="videoElement" autoplay></video><br>
+            <button id="captureButton" onclick="captureImage()">
+                <i class="fas fa-camera"></i> Capture Image
+            </button>
+        </div>
+    </div>
+
+    <div id="loadingSpinner">
+        <div class="loader"></div>
+        <p style="color: #4A4A4A;">Analyzing, please wait...</p>
+    </div>
+
+    <div id="result" aria-live="polite"></div>
+
+    <script>
+        let isAnalyzing = false;
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                document.getElementById('videoElement').srcObject = stream;
+            })
+            .catch((err) => {
+                console.error('Camera access error:', err);
+            });
+
+        function captureImage() {
+            const video = document.getElementById('videoElement');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const base64Image = canvas.toDataURL('image/jpeg').split(',')[1];
+            analyzeImage(base64Image);
+        }
+
+        async function analyzeImage(base64Image) {
+            try {
+                showLoading();
+                const response = await fetch("http://localhost:5050/analyze-image", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ image: base64Image }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayAnalysis(data.analysis);
+            } catch (error) {
+                console.error("Error:", error);
+                document.getElementById("result").innerHTML = `<p class="error">An error occurred: ${sanitizeHTML(error.message)}</p>`;
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function checkScam() {
+            if (isAnalyzing) return;
+            const message = document.getElementById("message").value.trim();
+
+            if (!message) {
+                document.getElementById("message").classList.add("error");
+                alert("Please enter a valid message.");
+                return;
+            }
+
+            document.getElementById("message").classList.remove("error");
+
+            try {
+                isAnalyzing = true;
+                document.getElementById("analyzeButton").disabled = true;
+                showLoading();
+
+                const response = await fetch("http://localhost:5050/analyze", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: message }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayAnalysis(data.analysis);
+            } catch (error) {
+                console.error("Error:", error);
+                document.getElementById("result").innerHTML = `<p class="error">An error occurred: ${sanitizeHTML(error.message)}</p>`;
+            } finally {
+                isAnalyzing = false;
+                document.getElementById("analyzeButton").disabled = false;
+                hideLoading();
+            }
+        }
+
+        function displayAnalysis(analysis) {
+            if (typeof analysis === 'object') {
+                const { scam_probability, is_scam, reasoning } = analysis;
+
+                let reasoningContent = "<ol>";
+                reasoning.forEach((point) => {
+                    reasoningContent += `<li>${sanitizeHTML(point)}</li>`;
+                });
+                reasoningContent += "</ol>";
+
+                document.getElementById("result").innerHTML = `
+                    <div class="analysis-item">
+                        <div class="label">Scam Probability:</div>
+                        <div class="value">${sanitizeHTML(scam_probability)}%</div>
+                    </div>
+                    <div class="analysis-item">
+                        <div class="label">Is Scam:</div>
+                        <div class="value">${sanitizeHTML(is_scam)}</div>
+                    </div>
+                    <div class="analysis-item">
+                        <div class="label">Reasoning:</div>
+                        <div class="value">${reasoningContent}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function sanitizeHTML(str) {
+            const temp = document.createElement('div');
+            temp.textContent = str;
+            return temp.innerHTML;
+        }
+
+        function showLoading() {
+            document.getElementById("loadingSpinner").style.display = "block";
+        }
+
+        function hideLoading() {
+            document.getElementById("loadingSpinner").style.display = "none";
+        }
+    </script>
+</body>
+</html>
