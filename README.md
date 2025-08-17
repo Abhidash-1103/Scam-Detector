@@ -1,6 +1,18 @@
 # scamdetector
 
-A new Flutter project.
+Silverward – Scam Detection and Awareness Platform for Seniors
+
+Silverward is a community-driven mobile application designed to protect senior citizens from financial and investment scams by combining AI-powered detection and engaging awareness tools. Built with a strong human-centered design approach, the app features a scam message classifier (text and image), personalized scam detection challenges, and trust-building elements such as badges and community feedback. Seniors can verify suspicious content, learn scam patterns in a gamified manner, and contribute to a safer online environment.
+
+Features Include:
+
+Scam text/image classification using AI models
+
+Community-based learning challenges
+
+Trust indicators and scam story sharing
+
+Interactive and intuitive user experience
 
 ## Getting Started
 
